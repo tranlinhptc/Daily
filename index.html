@@ -1,0 +1,211 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Manager</title>
+    <style>
+        :root {
+            --primary-color: #0d47a1;
+            --secondary-color: #1976d2;
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #212529;
+            --border-color: #e0e0e0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding-bottom: 40px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        header h1 { font-size: 20px; font-weight: 700; margin-bottom: 5px; }
+        header p { font-size: 13px; opacity: 0.9; }
+
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
+
+        .info-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .info-card h2 {
+            font-size: 16px;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e3f2fd;
+            padding-bottom: 8px;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 15px;
+        }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #424242;
+        }
+        .form-group input, .form-group select {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+        }
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--secondary-color);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+        }
+        .module-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.06);
+            transition: transform 0.2s;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+        }
+        .module-card:hover { transform: translateY(-4px); }
+        .module-img {
+            width: 100%;
+            height: 140px;
+            background-color: #e0e0e0;
+            overflow: hidden;
+        }
+        .module-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .module-body { padding: 15px; flex: 1; display: flex; flex-direction: column; }
+        .module-title { font-size: 16px; font-weight: 700; color: #1565c0; margin-bottom: 6px; }
+        .module-desc { font-size: 12px; color: #616161; margin-bottom: 15px; flex: 1; line-height: 1.4; }
+        .module-btn {
+            background: #e3f2fd;
+            color: var(--secondary-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 13px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>QUẢN LÝ THÍ NGHIỆM</h1>
+    <p>Cơ Sở Dữ Liệu & Xuất Biên Bản Tại Hiện Trường</p>
+</header>
+ 
+    <!-- 2. DANH MỤC THIẾT BỊ -->
+    <div class="section-title">⚡ CHỌN THIẾT BỊ THÍ NGHIỆM</div>
+    <!-- 
+    <div class="modules-grid">
+        <!-- 1. MBA -->
+        <div class="module-card" onclick="openModule('phobien.html')">
+          <!--  <div class="module-img"><img src="images/mba.jpg" alt="MBA"></div>-->
+            <div class="module-body">
+              <!--  <div class="module-title">Phổ biến PATC</div>
+                <div class="module-desc">Tỉ số biến, R_1C, R60/R15, Tanδ & C_x, R_CĐ.</div>-->
+                <div class="module-btn">1. Máy Biến Áp</div>
+            </div>
+        </div>
+
+        <!-- 2. TI -->
+        <div class="module-card" onclick="openModule('congtacphi.html')">
+            <!-- <div class="module-img"><img src="images/bd.jpg" alt="TI"></div> -->
+            <div class="module-body">
+                <!--!<div class="module-title">Công tác phí</div>
+                 <div class="module-desc">Đa cuộn dây (1-8 cuộn), Tỉ số biến, Cực tính, R_1C, Từ hóa.</div> -->
+                <div class="module-btn">2. Biến Dòng Điện</div>
+            </div>
+        </div>
+
+        <!-- 3. TU -->
+        <div class="module-card" onclick="openModule('theodoikq.html')">
+            <!-- <div class="module-img"><img src="images/bda.jpg" alt="TU"></div> -->
+            <div class="module-body">
+                <!--  <div class="module-title">Backup KQTN</div>
+                <div class="module-desc">Tỉ số biến đo 2 lần, R_1C 75°C, R_CĐ nội suy nhiệt độ dầu, Tgδ.</div> -->
+                <div class="module-btn">3. Biến Điện Áp</div>
+            </div>
+        </div>
+
+        <!-- 4. MÁY CẮT -->
+        <div class="module-card" onclick="openModule('mc.html')">
+            <!-- <div class="module-img"><img src="images/mc.jpg" alt="MC"></div> -->
+            <div class="module-body">
+                <!--<div class="module-title">4. Máy Cắt SF6 (Breaker)</div>-->
+                <div class="module-btn">4. Máy Cắt SF6</div>
+            </div>
+        </div>
+
+        <!-- 5. DCL
+        <div class="module-card" onclick="openModule('dao-cach-ly.html')">
+            <div class="module-img"><img src="images/dcl.jpg" alt="DCL"></div>
+            <div class="module-body">
+                <div class="module-title">5. Dao Cách Ly (DCL / DS)</div>
+                <div class="module-desc">Điện trở tiếp xúc lưỡi dao, R_CĐ, Đồng bộ 3 pha.</div>
+                <div class="module-btn">Vào Thử Nghiệm ➔</div>
+            </div>
+        </div> -->
+
+         <!-- 4. MÁY CẮT -->
+        <div class="module-card" onclick="openModule('csv.html')">
+            <!-- <div class="module-img"><img src="images/mc.jpg" alt="MC"></div> -->
+            <div class="module-body">
+                <!--<div class="module-title">4. Máy Cắt SF6 (Breaker)</div>-->
+                <div class="module-btn">5. Chống sét</div>
+            </div>
+        </div>
+
+        <!-- 7. DẦU
+        <!-- <div class="module-card" onclick="openModule('dau-cach-dien.html')">
+            <div class="module-img"><img src="images/dau.jpg" alt="Dầu"></div>
+            <div class="module-body">
+                <div class="module-title">7. Dầu Cách Điện (Oil Test)</div>
+                <div class="module-desc">Điện áp phóng điện đánh thủng (6 lần), Hàm lượng nước (ppm).</div>
+                <div class="module-btn">Vào Thử Nghiệm ➔</div>
+            </div>
+        </div>
+    </div>
+</div> -->
+ <script>
+     function openModule(fileName) {
+    window.location.href = `${fileName}`;
+     }
+ </script>
+
+</body>
+</html>

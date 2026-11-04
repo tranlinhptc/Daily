@@ -303,15 +303,16 @@
         </div>
         <div class="form-group full">
           <label>📷 Ảnh kết quả thí nghiệm</label>
-          <input type="file" id="fResultImgs" accept="image/*" multiple
-                 onchange="handleImgPick(this,'result')">
-          <div class="img-preview" id="resultPreview"></div>
+<input type="file" id="fResultImgs" accept="image/*,application/pdf" multiple
+       onchange="handleImgPick(this,'result')">
+
+          <!--div class="img-preview" id="resultPreview"></div-->
         </div>
         <div class="form-group full">
           <label>🏷️ Ảnh nameplate</label>
-          <input type="file" id="fNameplateImgs" accept="image/*" multiple
-                 onchange="handleImgPick(this,'nameplate')">
-          <div class="img-preview" id="nameplatePreview"></div>
+       <input type="file" id="fNameplateImgs" accept="image/*,application/pdf" multiple
+       onchange="handleImgPick(this,'nameplate')">
+          <!--div class="img-preview" id="nameplatePreview"></div-->
         </div>
       </div>
       <div class="modal-actions">
@@ -378,7 +379,22 @@ function fileToDataUrl(fileOrBlob){
     r.readAsDataURL(fileOrBlob);
   });
 }
-async function compressImage(file, type='result'){
+async function processFile(file, type='result'){
+  // Nếu là file PDF hoặc Word/Excel -> Không nén, đọc thẳng ra base64
+  if (!file.type.startsWith('image/')) {
+    const dataUrl = await fileToDataUrl(file);
+    return {
+      base64: dataUrl.split(',')[1],
+      dataUrl: dataUrl,
+      type: file.type,
+      name: file.name,
+      originalKB: Math.round(file.size/1024),
+      compressedKB: Math.round(file.size/1024),
+      isPdf: true
+    };
+  }
+
+  // Nếu là ảnh -> Chạy code nén như cũ
   const cfg = IMG_CONFIG[type] || IMG_CONFIG.result;
   let bitmap;
   try { bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' }); }
@@ -798,7 +814,7 @@ async function handleImgPick(input, type){
   await processWithLimit(items, async ({file, ph})=>{
     try{
       ph.progress = 'Đang nén...'; ph.progType = ''; renderPreviews();
-      const compressed = await compressImage(file, type);
+      const compressed = await compressFile(file, type);
       totalOriginal += compressed.originalKB; totalCompressed += compressed.compressedKB;
       ph.dataUrl = compressed.dataUrl;
       ph.originalKB = compressed.originalKB; ph.compressedKB = compressed.compressedKB;
@@ -830,8 +846,17 @@ function renderPreviews(){
   const build = (list, kind) => list.map((img,i)=>{
     const localSrc = img.dataUrl && img.dataUrl.startsWith('data:') ? img.dataUrl : null;
     const driveSrc = img.fileId ? driveImageUrl(img.fileId, 150) : null;
-    const src = localSrc || driveSrc;
-    const imgTag = src ? `<img src="${src}" onclick="openLightbox('${img.fileId||''}','${src}')">` : `<div class="ph">⏳</div>`;
+    const isPdf = img.isPdf || (img.type === 'application/pdf') || (img.name && img.name.toLowerCase().endsWith('.pdf'));
+    
+    let imgTag;
+    if (isPdf) {
+      // Giao diện riêng cho file PDF
+      imgTag = `<div class="ph" style="background:#fee;color:#dc3545;font-size:24px;" onclick="openLightbox('${img.fileId||''}','${localSrc||''}', true)">📄</div>`;
+    } else {
+      const src = localSrc || driveSrc;
+      imgTag = src ? `<img src="${src}" onclick="openLightbox('${img.fileId||''}','${src}', false)">` : `<div class="ph">⏳</div>`;
+    }
+    
     const prog = img.progress ? `<span class="prog ${img.progType||''}">${img.progress}</span>` : '';
     return `<div class="img-wrap ${img.uploading?'uploading':''}" title="${img.name||''}">${imgTag}${prog}<button type="button" class="del-img" onclick="removeImg('${kind}',${i})">&times;</button></div>`;
   }).join('');
@@ -900,25 +925,40 @@ function deleteEquipment(id){
 }
 
 /* LIGHTBOX */
-function openLightbox(fileId, fallbackSrc){
-  let url = fileId ? driveImageUrl(fileId, 1600) : null;
+function openLightbox(fileId, fallbackSrc, isPdf=false){
+  const lb = document.getElementById('lightbox');
   const img = document.getElementById('lightboxImg');
-  img.src = url || fallbackSrc;
-  img.onerror = ()=>{ if(fallbackSrc) img.src = fallbackSrc; img.onerror = null; };
-  document.getElementById('lightbox').classList.add('active');
+  
+  if (isPdf) {
+    if (!fileId) { toast('Đang tải PDF lên, vui lòng đợi đồng bộ xong để xem!', 'warn'); return; }
+    // Mở PDF bằng iframe
+    img.style.display = 'none';
+    let iframe = document.getElementById('lightboxIframe');
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.id = 'lightboxIframe';
+      iframe.style.cssText = 'width:90%;height:85%;border:none;background:#fff;border-radius:8px;';
+      lb.appendChild(iframe);
+    }
+    iframe.style.display = 'block';
+    iframe.src = `https://drive.google.com/file/d/${fileId}/preview`;
+  } else {
+    const iframe = document.getElementById('lightboxIframe');
+    if (iframe) iframe.style.display = 'none';
+    img.style.display = 'block';
+    
+    let url = fileId ? driveImageUrl(fileId, 1600) : null;
+    img.src = url || fallbackSrc;
+    img.onerror = ()=>{ if(fallbackSrc) img.src = fallbackSrc; img.onerror = null; };
+  }
+  lb.classList.add('active');
 }
-function closeLightbox(){ document.getElementById('lightbox').classList.remove('active'); }
 
-document.getElementById('searchBox').addEventListener('input', render);
-document.getElementById('filterStation').addEventListener('change', render);
-document.getElementById('filterReport').addEventListener('change', render);
-document.getElementById('filterDateField').addEventListener('change', render);
-document.getElementById('filterDateFrom').addEventListener('change', render);
-document.getElementById('filterDateTo').addEventListener('change', render);
-
-document.addEventListener('mousedown', e=>{
-  if(!e.target.closest('.autocomplete-wrap')) document.getElementById('stationDropdown')?.classList.remove('show');
-});
+function closeLightbox(){ 
+  document.getElementById('lightbox').classList.remove('active'); 
+  const iframe = document.getElementById('lightboxIframe');
+  if (iframe) iframe.src = 'about:blank';
+}
 
 window.addEventListener('beforeunload', e=>{ if(dirty){ e.preventDefault(); e.returnValue=''; } });
 

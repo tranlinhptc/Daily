@@ -70,6 +70,10 @@
   .thumb-empty{width:40px;height:40px;border:1px dashed #ccc;border-radius:4px;
     display:inline-flex;align-items:center;justify-content:center;
     color:#aaa;font-size:10px;white-space:nowrap}
+  
+  .thumb-pdf{width:40px;height:40px;background:#fee;border:1px solid #f5c2c7;
+    border-radius:4px;display:inline-flex;align-items:center;justify-content:center;
+    cursor:pointer;font-size:18px;margin-right:2px}
 
   .row-actions button{padding:4px 8px;font-size:11px;margin-right:2px}
 
@@ -151,12 +155,14 @@
     display:inline-block;vertical-align:middle;margin-left:6px;overflow:hidden}
   .progress > div{height:100%;background:#28a745}
 
+  /* CSS cho Lightbox */
   .lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);
     z-index:2000;align-items:center;justify-content:center}
   .lightbox.active{display:flex}
-  .lightbox img{max-width:92%;max-height:92%;border-radius:6px}
+  .lightbox img{max-width:92%;max-height:92%;border-radius:6px;display:none}
   .lightbox .close-lb{position:absolute;top:12px;right:22px;color:#fff;
-    font-size:38px;cursor:pointer;line-height:1}
+    font-size:38px;cursor:pointer;line-height:1;z-index:10}
+  
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
     background:#333;color:#fff;padding:12px 20px;border-radius:8px;
     font-size:13px;z-index:3000;opacity:0;transition:opacity .3s;
@@ -196,7 +202,7 @@
       <input type="text" id="searchBox" placeholder="🔍 Tìm theo tên / mã / trạm...">
       <select id="filterStation"><option value="">-- Tất cả trạm --</option></select>
       <select id="filterReport">
-        <option value="">-- All --</option>
+        <option value="">-- Tất cả biên bản --</option>
         <option value="Chưa làm">Chưa làm</option>
         <option value="Đang làm">Đang làm</option>
         <option value="Đã xong">Đã xong</option>
@@ -220,7 +226,7 @@
       <table>
         <thead>
           <tr>
-            <th>STT</th><th>Trạm</th><th>Mã TB</th><th>Tên thiết bị</th>
+            <th>STT</th><th>Trạm</th><th>Chỉ danh</th><th>Tên thiết bị</th>
             <th>Ngày lấy mẫu</th><th>Ngày TN</th>
             <th>Ảnh KQ</th><th>Nameplate</th><th>Biên bản</th><th></th>
           </tr>
@@ -266,14 +272,12 @@
                     tabindex="-1">▼</button>
             <div class="ac-list" id="stationDropdown"></div>
           </div>
-          <!--div class="hint">Chọn từ danh sách hoặc gõ tên mới</div-->
         </div>
         <div class="form-group">
           <label>Chỉ danh thiết bị <span class="req">*</span></label>
           <input type="text" id="fCode" required class="uppercase"
                  placeholder="VD: TB-001"
                  oninput="this.value=this.value.toUpperCase()">
-          <!--div class="hint">Tự IN HOA. Trùng mã OK nếu khác trạm.</div-->
         </div>
         <div class="form-group full">
           <label>Tên thiết bị <span style="color:#888;font-weight:normal">(không bắt buộc)</span></label>
@@ -302,35 +306,38 @@
           <textarea id="fNote" rows="2" placeholder="............."></textarea>
         </div>
         <div class="form-group full">
-          <label>📷 Ảnh kết quả thí nghiệm</label>
-<input type="file" id="fResultImgs" accept="image/*,application/pdf" multiple
-       onchange="handleImgPick(this,'result')">
-
-         <div class="img-preview" id="resultPreview"></div>
+          <label>📷 Ảnh kết quả thí nghiệm / PDF</label>
+          <input type="file" id="fResultImgs" accept="image/*,application/pdf" multiple
+                 onchange="handleImgPick(this,'result')">
+          <!-- Đã mở comment để không bị lỗi JS -->
+          <div class="img-preview" id="resultPreview"></div>
         </div>
         <div class="form-group full">
-          <label>🏷️ Ảnh nameplate</label>
-       <input type="file" id="fNameplateImgs" accept="image/*,application/pdf" multiple
-       onchange="handleImgPick(this,'nameplate')">
-          <!div class="img-preview" id="nameplatePreview"></div>
+          <label>🏷️ Ảnh nameplate / PDF</label>
+          <input type="file" id="fNameplateImgs" accept="image/*,application/pdf" multiple
+                 onchange="handleImgPick(this,'nameplate')">
+          <!-- Đã mở comment để không bị lỗi JS -->
+          <div class="img-preview" id="nameplatePreview"></div>
         </div>
       </div>
       <div class="modal-actions">
         <button type="button" class="btn-danger" onclick="closeModal()">Hủy</button>
-        <button type="submit" class="btn-primary" id="btnSave">💾 Lưu</button>
+        <button type="submit" class="btn-primary" id="btnSave">💾 Lưu & Đồng bộ</button>
       </div>
     </form>
   </div>
 </div>
 
-<div class="lightbox" id="lightbox" onclick="closeLightbox()">
-  <span class="close-lb">&times;</span>
-  <img id="lightboxImg" src="">
+<!-- Đã sửa lại sự kiện đóng Lightbox -->
+<div class="lightbox" id="lightbox" onclick="if(event.target===this) closeLightbox()">
+  <span class="close-lb" onclick="closeLightbox()">&times;</span>
+  <img id="lightboxImg" src="" onclick="event.stopPropagation()">
+  <!-- Thẻ iframe sẽ được tạo tự động bằng JS -->
 </div>
 <div class="toast" id="toast"></div>
 
 <script>
-/* ⬇ DÁN URL WEB APP CỦA BẠN VÀO ĐÂY ⬇ */
+/* ⬇ ĐÃ DÁN SẴN URL CỦA BẠN ⬇ */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzUm3S8moauD2tmRPo2O2toJoR2-tykL6lFv_5ZTb9xvv0YOIcJ-jpjfV_khHRAvIdJ/exec'; 
 
 let equipmentList = [];
@@ -345,7 +352,7 @@ function toast(msg, type=''){
   t.textContent = msg;
   t.className = 'toast show ' + type;
   clearTimeout(t._t);
-  t._t = setTimeout(()=>t.className='toast', 4000); // Tăng thời gian hiện lỗi
+  t._t = setTimeout(()=>t.className='toast', 4000); 
 }
 function setSyncState(state, text){
   const bar = document.getElementById('syncBar');
@@ -369,7 +376,7 @@ function fmtDate(d){
 function dateOnly(d){ return d ? String(d).split('T')[0] : ''; }
 function monthKey(d){ const s = dateOnly(d); return s ? s.slice(0,7) : 'Chưa có'; }
 
-/* NÉN ẢNH */
+/* NÉN ẢNH & FILE */
 const IMG_CONFIG = { result: { maxDim: 1200, quality: 0.72 }, nameplate: { maxDim: 1400, quality: 0.80 } };
 function fileToDataUrl(fileOrBlob){
   return new Promise((resolve, reject)=>{
@@ -380,7 +387,6 @@ function fileToDataUrl(fileOrBlob){
   });
 }
 async function processFile(file, type='result'){
-  // Nếu là file PDF hoặc Word/Excel -> Không nén, đọc thẳng ra base64
   if (!file.type.startsWith('image/')) {
     const dataUrl = await fileToDataUrl(file);
     return {
@@ -394,7 +400,6 @@ async function processFile(file, type='result'){
     };
   }
 
-  // Nếu là ảnh -> Chạy code nén như cũ
   const cfg = IMG_CONFIG[type] || IMG_CONFIG.result;
   let bitmap;
   try { bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' }); }
@@ -449,7 +454,7 @@ async function apiPost(payload){
     return json.data;
   } catch (e) {
     console.error("Server Response:", text);
-    throw new Error("Lỗi kết nối Server. Kiểm tra lại URL Web App hoặc quyền.");
+    throw new Error("Lỗi kết nối Server. Vui lòng kiểm tra mạng hoặc quyền Deploy.");
   }
 }
 async function uploadImageToDrive(img){
@@ -551,17 +556,16 @@ async function syncNow(){
     for(const dev of equipmentList){
       if(dev._synced !== false) continue;
 
-      // Tự động upload lại ảnh nếu lỗi mạng
       const allImgs = [...(dev.resultImages||[]), ...(dev.nameplateImages||[])];
       for(const img of allImgs){
         if(!img.fileId && img.dataUrl){
           try {
             const base64 = img.dataUrl.split(',')[1];
-            const up = await uploadImageToDrive({base64, type:'image/jpeg', name: img.name||'img.jpg'});
+            const up = await uploadImageToDrive({base64, type:img.type||'image/jpeg', name: img.name||'file'});
             img.fileId = up.fileId;
             img.dataUrl = null;
           } catch(e) {
-            throw new Error("Lỗi upload ảnh Drive: " + e.message);
+            throw new Error("Lỗi upload File Drive: " + e.message);
           }
         }
       }
@@ -573,7 +577,6 @@ async function syncNow(){
         stationId: st ? st.id : '',
         code: String(dev.code||'').toUpperCase(),
         name: dev.name || '',
-        // ✅ BỔ SUNG 3 DÒNG QUAN TRỌNG NÀY:
         samplingDate: dev.samplingDate || '',
         testDate:     dev.testDate || '',
         reportStatus: dev.reportStatus || 'Chưa làm',
@@ -644,11 +647,15 @@ function render(){
       const rc = e.reportStatus === 'Đã xong' ? 'badge-green' : e.reportStatus === 'Đang làm' ? 'badge-yellow' : 'badge-red';
       
       const buildThumb = (img)=>{
+        const isPdf = img.type === 'application/pdf' || (img.name && img.name.toLowerCase().endsWith('.pdf'));
+        if (isPdf) {
+          return `<div class="thumb-pdf" onclick="openLightbox('${img.fileId||''}','', true)">📄</div>`;
+        }
         const localSrc = img.dataUrl && img.dataUrl.startsWith('data:') ? img.dataUrl : null;
         const driveSrc = img.fileId ? driveImageUrl(img.fileId, 80) : null;
         const primary = localSrc || driveSrc;
         if(!primary) return '';
-        return `<img class="thumb" src="${primary}" onclick="openLightbox('${img.fileId||''}','${primary}')">`;
+        return `<img class="thumb" src="${primary}" onclick="openLightbox('${img.fileId||''}','${primary}', false)">`;
       };
       const rImgs = (e.resultImages||[]).slice(0,2).map(buildThumb).join('') || '<div class="thumb-empty">Trống</div>';
       const nImgs = (e.nameplateImages||[]).slice(0,2).map(buildThumb).join('') || '<div class="thumb-empty">Trống</div>';
@@ -804,7 +811,7 @@ async function handleImgPick(input, type){
   if(!files.length) return;
   const arr = type==='result' ? tempResultImgs : tempNameplateImgs;
   const items = files.map(file=>{
-    const ph = { fileId: null, dataUrl: null, name: file.name, uploading: true, progress: 'Đang nén...', progType: '' };
+    const ph = { fileId: null, dataUrl: null, name: file.name, type: file.type, uploading: true, progress: 'Đang nén...', progType: '' };
     arr.push(ph); return { file, ph };
   });
   renderPreviews();
@@ -813,11 +820,12 @@ async function handleImgPick(input, type){
 
   await processWithLimit(items, async ({file, ph})=>{
     try{
-      ph.progress = 'Đang nén...'; ph.progType = ''; renderPreviews();
+      ph.progress = 'Đang xử lý...'; ph.progType = ''; renderPreviews();
       const compressed = await processFile(file, type);
       totalOriginal += compressed.originalKB; totalCompressed += compressed.compressedKB;
       ph.dataUrl = compressed.dataUrl;
       ph.originalKB = compressed.originalKB; ph.compressedKB = compressed.compressedKB;
+      ph.type = compressed.type;
       
       ph.progress = 'Đang upload...'; renderPreviews();
       const up = await uploadImageToDrive(compressed);
@@ -837,21 +845,24 @@ async function handleImgPick(input, type){
 
   if(okCount > 0){
     const saved = totalOriginal > 0 ? Math.round((1 - totalCompressed/totalOriginal) * 100) : 0;
-    toast(`${okCount} ảnh OK: ${totalOriginal}KB → ${totalCompressed}KB (-${saved}%)`, 'success');
+    toast(`${okCount} tệp OK (-${saved}%)`, 'success');
   }
-  if(errCount > 0) toast(`${errCount} ảnh không xử lý được`, 'error');
+  if(errCount > 0) toast(`${errCount} tệp không xử lý được`, 'error');
 }
 
 function renderPreviews(){
+  const r = document.getElementById('resultPreview');
+  const n = document.getElementById('nameplatePreview');
+  if(!r || !n) return; // Tránh lỗi crash nếu HTML bị thiếu thẻ
+
   const build = (list, kind) => list.map((img,i)=>{
+    const isPdf = img.type === 'application/pdf' || (img.name && img.name.toLowerCase().endsWith('.pdf'));
     const localSrc = img.dataUrl && img.dataUrl.startsWith('data:') ? img.dataUrl : null;
     const driveSrc = img.fileId ? driveImageUrl(img.fileId, 150) : null;
-    const isPdf = img.isPdf || (img.type === 'application/pdf') || (img.name && img.name.toLowerCase().endsWith('.pdf'));
     
     let imgTag;
     if (isPdf) {
-      // Giao diện riêng cho file PDF
-      imgTag = `<div class="ph" style="background:#fee;color:#dc3545;font-size:24px;" onclick="openLightbox('${img.fileId||''}','${localSrc||''}', true)">📄</div>`;
+      imgTag = `<div class="ph" style="background:#fee;color:#dc3545;font-size:24px;" onclick="openLightbox('${img.fileId||''}','', true)">📄</div>`;
     } else {
       const src = localSrc || driveSrc;
       imgTag = src ? `<img src="${src}" onclick="openLightbox('${img.fileId||''}','${src}', false)">` : `<div class="ph">⏳</div>`;
@@ -860,8 +871,9 @@ function renderPreviews(){
     const prog = img.progress ? `<span class="prog ${img.progType||''}">${img.progress}</span>` : '';
     return `<div class="img-wrap ${img.uploading?'uploading':''}" title="${img.name||''}">${imgTag}${prog}<button type="button" class="del-img" onclick="removeImg('${kind}',${i})">&times;</button></div>`;
   }).join('');
-  document.getElementById('resultPreview').innerHTML = build(tempResultImgs, 'result');
-  document.getElementById('nameplatePreview').innerHTML = build(tempNameplateImgs, 'nameplate');
+  
+  r.innerHTML = build(tempResultImgs, 'result');
+  n.innerHTML = build(tempNameplateImgs, 'nameplate');
 }
 function removeImg(type, idx){
   if(type==='result') tempResultImgs.splice(idx,1);
@@ -878,16 +890,17 @@ function saveEquipment(ev){
   const name = document.getElementById('fName').value.trim().toUpperCase();
 
   if(!stationName){ toast('Trạm bắt buộc', 'error'); return; }
-  if(!code){ toast('Mã thiết bị bắt buộc', 'error'); return; }
+  if(!code){ toast('Chỉ danh thiết bị bắt buộc', 'error'); return; }
 
   const dup = equipmentList.find(x=>x.id !== id && (x.code||'').toUpperCase() === code && (x.stationName||'').toUpperCase() === stationName);
-  if(dup){ toast(`Mã "${code}" đã tồn tại trong trạm "${stationName}"`, 'error'); return; }
+  if(dup){ toast(`Chỉ danh "${code}" đã tồn tại trong trạm "${stationName}"`, 'error'); return; }
 
   const cleanImgs = (arr) => arr
     .filter(i=>i.fileId || (i.dataUrl && !i.uploading))
     .map(i=>({
       fileId: i.fileId || null,
       name: i.name || '',
+      type: i.type || '',
       dataUrl: i.fileId ? null : i.dataUrl,
       originalKB: i.originalKB,
       compressedKB: i.compressedKB
@@ -924,14 +937,14 @@ function deleteEquipment(id){
   })();
 }
 
-/* LIGHTBOX */
+/* LIGHTBOX ĐÃ SỬA LỖI BẤM VÀO BỊ TẮT */
 function openLightbox(fileId, fallbackSrc, isPdf=false){
   const lb = document.getElementById('lightbox');
   const img = document.getElementById('lightboxImg');
   
   if (isPdf) {
     if (!fileId) { toast('Đang tải PDF lên, vui lòng đợi đồng bộ xong để xem!', 'warn'); return; }
-    // Mở PDF bằng iframe
+    
     img.style.display = 'none';
     let iframe = document.getElementById('lightboxIframe');
     if (!iframe) {
@@ -959,6 +972,17 @@ function closeLightbox(){
   const iframe = document.getElementById('lightboxIframe');
   if (iframe) iframe.src = 'about:blank';
 }
+
+document.getElementById('searchBox').addEventListener('input', render);
+document.getElementById('filterStation').addEventListener('change', render);
+document.getElementById('filterReport').addEventListener('change', render);
+document.getElementById('filterDateField').addEventListener('change', render);
+document.getElementById('filterDateFrom').addEventListener('change', render);
+document.getElementById('filterDateTo').addEventListener('change', render);
+
+document.addEventListener('mousedown', e=>{
+  if(!e.target.closest('.autocomplete-wrap')) document.getElementById('stationDropdown')?.classList.remove('show');
+});
 
 window.addEventListener('beforeunload', e=>{ if(dirty){ e.preventDefault(); e.returnValue=''; } });
 

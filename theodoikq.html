@@ -814,7 +814,7 @@ async function handleImgPick(input, type){
   await processWithLimit(items, async ({file, ph})=>{
     try{
       ph.progress = 'Đang nén...'; ph.progType = ''; renderPreviews();
-      const compressed = await compressFile(file, type);
+      const compressed = await processFile(file, type);
       totalOriginal += compressed.originalKB; totalCompressed += compressed.compressedKB;
       ph.dataUrl = compressed.dataUrl;
       ph.originalKB = compressed.originalKB; ph.compressedKB = compressed.compressedKB;
